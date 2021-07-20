@@ -1,4 +1,3 @@
 node_modules
-atiOutput
-ati-types
-ati.config.js
+autoapi
+autoapi.config.js
