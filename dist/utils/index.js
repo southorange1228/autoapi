@@ -29,7 +29,7 @@ const getAtiConfigs = (defaultAtiConfigs = {}) => {
     const cwd = process.cwd();
     const configPath = `${cwd}/autoapi.config.js`;
     if (!fs.existsSync(configPath)) {
-        consola.error('autoapi.config.js 配置文件不存在！可运行 ati init 初始化配置');
+        consola.error('autoapi.config.js 配置文件不存在！可运行 autoapi init 初始化配置');
         process.exit(0);
     }
     const userAtiConfig = require(configPath) || {};

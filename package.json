@@ -16,7 +16,7 @@
     "genlog": "conventional-changelog -p angular -i CHANGELOG.md -s"
   },
   "bin": {
-    "autoapi": "bin/ati"
+    "autoapi": "bin/autoapi"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,10 @@
   },
   "keywords": [
     "auto generate request files",
-    "yapi to file"
+    "yapi to file",
+    "yapi-autoapi",
+    "autoapi",
+    "auto request"
   ],
   "author": "psaren",
   "license": "MIT",
