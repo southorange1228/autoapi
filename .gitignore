@@ -2,3 +2,4 @@ node_modules
 autoapi
 autoapi.config.js
 auto-request-folder
+dist
