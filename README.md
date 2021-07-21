@@ -33,7 +33,24 @@ module.exports = {
     } else {
       return `${name}Res`
     }
-  }
+  },
+  // 支持自定义模板，只需要将按照以下格式传递即可
+  // paramsContent， 入参+ 出参的内容，自动生成无需修改
+  // functionName, 函数名，自动生成无需修改
+  // reqName, 入参名，自动生成无需修改
+  // resName, 出参名，自动生成无需修改
+  // requestPath, 请求路径，自动生成无需修改
+  customTemplate: `
+    import aa from 'a'
+    import request from 'request'
+    {paramsContent}
+    export async function {functionName}(data:{reqName}): Promise<{resName}> {
+      return axios.request({requestPath}, {
+        method: 'post',
+        data
+      })
+    }
+    `
 }
 ```
 ## run： 自动生成request文件
