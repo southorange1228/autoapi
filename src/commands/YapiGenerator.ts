@@ -10,15 +10,18 @@ const ora = require('ora')
 const path = require('path')
 const consola = require('consola')
 
+// eslint-disable-next-line quotes
 const headerContent = `import request from './lib/'`
 const footerContent = ({ ...params }) => {
   let { functionName, requestPath, reqName, resName } = params
-  reqName = reqName.replace(/([a-zA-Z]{1})(.+)/, (_, str1, str2) => {
-    return str1.toUpperCase() + str2
-  })
-  resName = resName.replace(/([a-zA-Z]{1})(.+)/, (_, str1, str2) => {
-    return str1.toUpperCase() + str2
-  })
+  // 获取首字母大写的参数名
+  const getUpperName = (str) => {
+    return str.replace(/([a-zA-Z]{1})(.+)/, (_, str1, str2) => {
+      return str1.toUpperCase() + str2
+    })
+  }
+  reqName = getUpperName(reqName)
+  resName = getUpperName(resName)
   return `
   export async function ${functionName}(data: ${reqName}): Promise<${resName}> {
     return request('${requestPath}', {
@@ -38,6 +41,7 @@ interface YapiConfig {
   groupId?: string[]
   json2TsOptions?: Partial<Options>
   customInterfaceName?: CustomInterfaceName
+  customTemplate?: string
 }
 
 export type ApiItem = { path: string; id: number }
@@ -56,15 +60,34 @@ const defaultYapiGeneratorConfig: Partial<YapiConfig> = {
     }
   }
 }
+
+// 模板变量替换方法
+const template = (paramsStr = '', replaceMap = {}) => {
+  // /(?<={)[^}]+(?=})/g 有些不支持 <的语法
+  let str = paramsStr
+  const array = str.match(/(?={)[^}]+}/g) || []
+  if (!str || Object.prototype.toString.call(replaceMap) !== '[object Object]') {
+    return str
+  }
+  array.forEach((item) => {
+    const key = item.replace('{', '').replace('}', '').replace(/\s+/, '')
+    if (replaceMap && replaceMap[key]) {
+      const value = replaceMap[key]
+      str = str.replace(item, value)
+    }
+  })
+  return str
+}
 class YapiGenerator extends Generator<YapiConfig> {
   request: AxiosInstance
 
-  constructor() {
+  constructor () {
     super(getAtiConfigs({ output: 'atiOutput' }))
     this.initRequest()
   }
 
-  public initRequest() {
+  // 统一request方法
+  public initRequest () {
     this.config = Object.assign({}, defaultYapiGeneratorConfig, this.config)
     const atiConfigs = this.config
     const request = axios.create({
@@ -94,7 +117,8 @@ class YapiGenerator extends Generator<YapiConfig> {
     return this.request
   }
 
-  public checkConfig() {
+  // 检查必填配置项
+  public checkConfig () {
     const { url, projectId, token } = this.config
     if (!url) {
       consola.error('url is required!')
@@ -112,7 +136,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 文件写入工具
-  writeInterfaceToFile({
+  writeInterfaceToFile ({
     ...params
   }: {
     reqContent: string
@@ -124,6 +148,7 @@ class YapiGenerator extends Generator<YapiConfig> {
     requestPath: string
   }) {
     const { reqContent, resContent, reqName, resName, name, paths, requestPath } = params
+    let newContent = ''
     const outputRootPath = path.resolve(process.cwd(), `${this.config.output}`)
     if (!fs.existsSync(outputRootPath)) {
       fs.mkdirSync(outputRootPath)
@@ -133,14 +158,23 @@ class YapiGenerator extends Generator<YapiConfig> {
       fs.mkdirSync(fileDirPath)
     }
     const filePath = `${fileDirPath}/${name}.ts`
-    const newContent = `${headerContent}
-${reqContent}
-${resContent}
-${footerContent({ functionName: name, requestPath, reqName, resName })}
-`
-    // if (fs.existsSync(filePath)) {
-    //   newContent = fs.readFileSync(filePath, { encoding: 'utf8' }) + `\n${content}`
-    // }
+    const customTemplate = this.config.customTemplate
+    if (customTemplate) {
+      newContent = template(customTemplate, {
+        paramsContent: `${reqContent}
+        ${resContent}`,
+        functionName: name,
+        reqName,
+        resName,
+        requestPath
+      })
+    } else {
+      newContent = `${headerContent}
+        ${reqContent}
+        ${resContent}
+        ${footerContent({ functionName: name, requestPath, reqName, resName })} 
+      `
+    }
     fs.writeFileSync(filePath, newContent, { encoding: 'utf8' })
   }
 
@@ -148,6 +182,7 @@ ${footerContent({ functionName: name, requestPath, reqName, resName })}
     return this.config?.customInterfaceName?.(name, type, response) || name
   }
 
+  // 生成接口入参和出参的方法
   generateInterface = async (item: ApiItem) => {
     const resp = await this.request({
       url: YapiUrls.apiInfo,
@@ -182,17 +217,6 @@ ${footerContent({ functionName: name, requestPath, reqName, resName })}
           // interfaceName 就是我要的req名称
           const res = await compile(reqSchema, interfaceName, atiConfigs.json2TsOptions)
           reqContent = parseTsCode(res, removeIndexSignatureMiddleWare)
-          // compile(reqSchema, interfaceName, atiConfigs.json2TsOptions)
-          //   .then(ts => {
-          //     reqContent = parseTsCode(ts, removeIndexSignatureMiddleWare)
-          //     console.log(reqContent, 'reqContent')
-          //     // this.writeInterfaceToFile({
-          //     //   content: parseTsCode(ts, removeIndexSignatureMiddleWare),
-          //     //   name,
-          //     //   paths,
-          //     //   requestPath: item.path
-          //     // })
-          //   })
         }
         if (resSchema) {
           const interfaceName = this.customInterfaceName(camelCase(name), 'res', respData)
@@ -208,17 +232,6 @@ ${footerContent({ functionName: name, requestPath, reqName, resName })}
           resName = interfaceName
           const res = await compile(resSchema, interfaceName, compileOptions)
           resContent = parseTsCode(res, removeIndexSignatureMiddleWare)
-          // compile(resSchema, interfaceName, compileOptions)
-          //   .then(ts => {
-          //     resContent = parseTsCode(ts, removeIndexSignatureMiddleWare)
-          //     console.log(resContent, 'resContent')
-          //     // this.writeInterfaceToFile({
-          //     //   content: parseTsCode(ts, removeIndexSignatureMiddleWare),
-          //     //   name,
-          //     //   paths,
-          //     //   requestPath: item.path
-          //     // })
-          //   })
         } else {
           consola.error(respData?.path)
           consola.info(`ignore: ${respData.res_body}`)
@@ -251,6 +264,7 @@ ${footerContent({ functionName: name, requestPath, reqName, resName })}
     }
   }
 
+  // 遍历任务
   generate = async () => {
     await this.getGroupId()
     this.config.groupId?.forEach(async (catId) => {

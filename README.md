@@ -1,4 +1,4 @@
-# autoapi
+# yapi-autoapi
 
 YAPI接口自动化，生成ts文件，即用即取
 
@@ -36,8 +36,6 @@ module.exports = {
   }
 }
 ```
-
-```
 ## run： 自动生成request文件
 ```
 autoapi run
@@ -52,7 +50,7 @@ autoapi run
 | output              | interface 输出目录   | string              |        |
 | groupId             | 项目内的分组 id      | string[]            |        |
 | customInterfaceName | 自定义interface name | CustomInterfaceName |        |
-```
+
 ### 生成结果
 
 ``` js
