@@ -81,13 +81,13 @@ const template = (paramsStr = '', replaceMap = {}) => {
 class YapiGenerator extends Generator<YapiConfig> {
   request: AxiosInstance
 
-  constructor () {
+  constructor() {
     super(getAtiConfigs({ output: 'atiOutput' }))
     this.initRequest()
   }
 
   // 统一request方法
-  public initRequest () {
+  public initRequest() {
     this.config = Object.assign({}, defaultYapiGeneratorConfig, this.config)
     const atiConfigs = this.config
     const request = axios.create({
@@ -118,7 +118,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 检查必填配置项
-  public checkConfig () {
+  public checkConfig() {
     const { url, projectId, token } = this.config
     if (!url) {
       consola.error('url is required!')
@@ -136,7 +136,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 文件写入工具
-  writeInterfaceToFile ({
+  writeInterfaceToFile({
     ...params
   }: {
     reqContent: string
