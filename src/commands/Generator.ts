@@ -2,7 +2,7 @@ import { AxiosInstance } from 'axios'
 
 abstract class Generator<T> {
   config: T
-  constructor (config: T) {
+  constructor(config: T) {
     this.config = config
   }
 
@@ -13,7 +13,7 @@ abstract class Generator<T> {
 
   public abstract generate(...args): void | Promise<void>
 
-  public run () {
+  public run() {
     if (!this.checkConfig()) {
       return
     }
