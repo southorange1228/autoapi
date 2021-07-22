@@ -3,9 +3,7 @@ module.exports = {
     browser: true,
     es6: true
   },
-  extends: [
-    'standard'
-  ],
+  extends: ['standard', 'plugin:prettier/recommended'],
   globals: {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly'
@@ -15,9 +13,7 @@ module.exports = {
     ecmaVersion: 11,
     sourceType: 'module'
   },
-  plugins: [
-    '@typescript-eslint'
-  ],
+  plugins: ['@typescript-eslint'],
   rules: {
     'no-unmodified-loop-condition': 'off'
   },

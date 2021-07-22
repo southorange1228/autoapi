@@ -32,7 +32,7 @@ const footerContent = ({ ...params }) => {
   `
 }
 
-type CustomInterfaceName = (name: string, type: string, response: any) => string
+type CustomInterfaceName = (name: string, type: 'request' | 'response', response: any) => string
 interface YapiConfig {
   url: string
   projectId: string
@@ -41,7 +41,13 @@ interface YapiConfig {
   groupId?: string[]
   json2TsOptions?: Partial<Options>
   customInterfaceName?: CustomInterfaceName
-  customTemplate?: string
+  customTemplate?: (
+    functionName: string,
+    requestPath: string,
+    requestInterfaceName: string,
+    responseInterfaceName: string,
+    paramsContent: string
+  ) => string
 }
 
 export type ApiItem = { path: string; id: number }
@@ -53,41 +59,24 @@ const defaultYapiGeneratorConfig: Partial<YapiConfig> = {
     * DO NOT MODIFY IT BY HAND.\n*/`
   },
   customInterfaceName: (name, type) => {
-    if (type === 'req') {
-      return `${name}Req`
+    if (type === 'request') {
+      return `${name}RequestType`
     } else {
-      return `${name}Res`
+      return `${name}ResponseType`
     }
   }
 }
 
-// 模板变量替换方法
-const template = (paramsStr = '', replaceMap = {}) => {
-  // /(?<={)[^}]+(?=})/g 有些不支持 <的语法
-  let str = paramsStr
-  const array = str.match(/(?={)[^}]+}/g) || []
-  if (!str || Object.prototype.toString.call(replaceMap) !== '[object Object]') {
-    return str
-  }
-  array.forEach((item) => {
-    const key = item.replace('{', '').replace('}', '').replace(/\s+/, '')
-    if (replaceMap && replaceMap[key]) {
-      const value = replaceMap[key]
-      str = str.replace(item, value)
-    }
-  })
-  return str
-}
 class YapiGenerator extends Generator<YapiConfig> {
   request: AxiosInstance
 
-  constructor () {
+  constructor() {
     super(getAtiConfigs({ output: 'atiOutput' }))
     this.initRequest()
   }
 
   // 统一request方法
-  public initRequest () {
+  public initRequest() {
     this.config = Object.assign({}, defaultYapiGeneratorConfig, this.config)
     const atiConfigs = this.config
     const request = axios.create({
@@ -118,7 +107,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 检查必填配置项
-  public checkConfig () {
+  public checkConfig() {
     const { url, projectId, token } = this.config
     if (!url) {
       consola.error('url is required!')
@@ -136,7 +125,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 文件写入工具
-  writeInterfaceToFile ({
+  writeInterfaceToFile({
     ...params
   }: {
     reqContent: string
@@ -160,14 +149,14 @@ class YapiGenerator extends Generator<YapiConfig> {
     const filePath = `${fileDirPath}/${name}.ts`
     const customTemplate = this.config.customTemplate
     if (customTemplate) {
-      newContent = template(customTemplate, {
-        paramsContent: `${reqContent}
-        ${resContent}`,
-        functionName: name,
+      newContent = customTemplate(
+        name,
+        requestPath,
         reqName,
         resName,
-        requestPath
-      })
+        `${reqContent}
+      ${resContent}`
+      )
     } else {
       newContent = `${headerContent}
         ${reqContent}
@@ -178,7 +167,7 @@ class YapiGenerator extends Generator<YapiConfig> {
     fs.writeFileSync(filePath, newContent, { encoding: 'utf8' })
   }
 
-  customInterfaceName = (name: string, type: string, response: any) => {
+  customInterfaceName = (name: string, type: 'request' | 'response', response: any) => {
     return this.config?.customInterfaceName?.(name, type, response) || name
   }
 
@@ -209,7 +198,7 @@ class YapiGenerator extends Generator<YapiConfig> {
           const reqSchema = reqBody?.properties?.data || reqBody
           const tempName = respData?.path?.split('/')?.slice(-2)?.join('-')
           // If interface name is `title`, change the interface name
-          const interfaceName = this.customInterfaceName(camelCase(tempName), 'req', respData)
+          const interfaceName = this.customInterfaceName(camelCase(tempName), 'request', respData)
           if (reqSchema.title === 'title') {
             reqSchema.title = interfaceName
           }
@@ -219,7 +208,7 @@ class YapiGenerator extends Generator<YapiConfig> {
           reqContent = parseTsCode(res, removeIndexSignatureMiddleWare)
         }
         if (resSchema) {
-          const interfaceName = this.customInterfaceName(camelCase(name), 'res', respData)
+          const interfaceName = this.customInterfaceName(camelCase(name), 'response', respData)
 
           const compileOptions = {
             ...(atiConfigs?.json2TsOptions || {})
