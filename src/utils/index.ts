@@ -12,9 +12,8 @@ export function getPkgVersion (): string {
 }
 
 export function printPkgVersion () {
-  const taroVersion = getPkgVersion()
-  console.log(`api-to-interface v${taroVersion}`)
-  console.log()
+  const version = getPkgVersion()
+  console.log(`yapi-autoapi current v${version}`)
 }
 
 export const isObject = (arg): boolean => Object.prototype.toString.call(arg) === '[object Object]'
