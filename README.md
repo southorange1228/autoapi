@@ -82,6 +82,24 @@ autoapi run
 | output              | interface 输出目录    | string              |        |
 | groupId             | 项目内的分组 id       | string[]            |        |
 | customInterfaceName | 自定义 interface name | CustomInterfaceName |        |
+| customTemplate      | 自定义生成文件内容    | CustomTemplate      |        |
+
+其中`CustomTemplate`的类型定义如下：
+
+```ts
+type CustomTemplate = (
+  //  生成函数名
+  functionName: string,
+  //  请求接口地址
+  requestPath: string,
+  //  请求参数类型名
+  requestInterfaceName: string,
+  //  响应参数类型名
+  responseInterfaceName: string,
+  //  参数类型定义内容
+  paramsContent: string
+) => string
+```
 
 ### 生成结果
 
