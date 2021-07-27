@@ -1,5 +1,7 @@
 import * as ts from 'typescript'
 import * as path from 'path'
+import * as prettier from 'prettier'
+
 const fs = require('fs-extra')
 const consola = require('consola')
 
@@ -66,4 +68,16 @@ export const parseTsCode = (code: string, middleWare?: (x: any) => any) => {
     middleWare(sourceFile)
   }
   return ts.createPrinter().printFile(sourceFile)
+}
+
+/**
+ * 格式化代码
+ * @param content 代码内容
+ * @param configPath prettier格式化配置文件路径
+ * @returns
+ */
+export const formatCode = async (content: string, configPath: string) => {
+  const configOptions = await prettier.resolveConfig(configPath)
+  const formatted = prettier.format(content, { parser: 'typescript', ...(configOptions as any) })
+  return formatted
 }

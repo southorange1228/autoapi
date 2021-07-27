@@ -1,6 +1,6 @@
 import Generator from './Generator'
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
-import { getAtiConfigs, parseTsCode, removeIndexSignatureMiddleWare } from '../utils'
+import { formatCode, getAtiConfigs, parseTsCode, removeIndexSignatureMiddleWare } from '../utils'
 import { YapiUrls } from '../dict'
 import camelCase from 'camelcase'
 import { compile, Options } from 'json-schema-to-typescript'
@@ -48,6 +48,7 @@ interface YapiConfig {
     responseInterfaceName: string,
     paramsContent: string
   ) => string
+  prettierConfig?: string
 }
 
 export type ApiItem = { path: string; id: number }
@@ -64,7 +65,8 @@ const defaultYapiGeneratorConfig: Partial<YapiConfig> = {
     } else {
       return `${name}ResponseType`
     }
-  }
+  },
+  prettierConfig: path.join(__dirname, './defaultConfig/prettierConfig.js')
 }
 
 class YapiGenerator extends Generator<YapiConfig> {
@@ -125,7 +127,7 @@ class YapiGenerator extends Generator<YapiConfig> {
   }
 
   // 文件写入工具
-  writeInterfaceToFile({
+  async writeInterfaceToFile({
     ...params
   }: {
     reqContent: string
@@ -164,7 +166,8 @@ class YapiGenerator extends Generator<YapiConfig> {
         ${footerContent({ functionName: name, requestPath, reqName, resName })} 
       `
     }
-    fs.writeFileSync(filePath, newContent, { encoding: 'utf8' })
+    const formatedCode = await formatCode(newContent, this.config.prettierConfig as string)
+    fs.writeFileSync(filePath, formatedCode, { encoding: 'utf8' })
   }
 
   customInterfaceName = (name: string, type: 'request' | 'response', response: any) => {
@@ -225,7 +228,7 @@ class YapiGenerator extends Generator<YapiConfig> {
           consola.error(respData?.path)
           consola.info(`ignore: ${respData.res_body}`)
         }
-        this.writeInterfaceToFile({
+        await this.writeInterfaceToFile({
           reqContent,
           resContent,
           reqName,

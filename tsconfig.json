@@ -13,15 +13,12 @@
     "outDir": "dist/",
     "preserveConstEnums": true,
     "removeComments": false,
-    "rootDir": "./src",
     "sourceMap": false,
     "strictNullChecks": true,
     "target": "es2017",
     "traceResolution": false,
-    "types" : ["node"],
+    "types": ["node"],
     "declaration": true
   },
-  "include": [
-    "./src"
-  ]
+  "include": ["src/**/*"]
 }
